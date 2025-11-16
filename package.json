@@ -1,0 +1,31 @@
+{
+  "name": "smart-order",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/shindisme/backend-Smart-Order#readme",
+  "bugs": {
+    "url": "https://github.com/shindisme/backend-Smart-Order/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shindisme/backend-Smart-Order.git"
+  },
+  "license": "ISC",
+  "author": "Shindie",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "mysql2": "^3.15.3",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
