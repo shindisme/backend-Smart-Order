@@ -27,5 +27,5 @@ export function AppRouter(app) {
     router.use('/option-groups', optionGroupRoutes);
     router.use('/options', optionRoutes);
 
-    app.use('/api', router);
+    app.use('/api/v1', router);
 };

@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', InvoiceController.getAllInvoices);
 router.get('/:id', InvoiceController.getInvoiceById);
 router.post('/', InvoiceController.insertInvoice);
-router.put('/:id', InvoiceController.updateInvoice);
+router.patch('/:id', InvoiceController.updateInvoice);
 router.delete('/:id', InvoiceController.deleteInvoice);
 
 export default router;

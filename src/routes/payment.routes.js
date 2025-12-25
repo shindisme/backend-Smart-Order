@@ -6,8 +6,6 @@ const router = express.Router();
 // /api/payments
 router.get('/', PaymentController.getAllPayments);
 router.get('/:id', PaymentController.getPaymentById);
-router.post('/', PaymentController.insertPayment);
-router.put('/:id', PaymentController.updatePayment);
-router.delete('/:id', PaymentController.deletePayment);
+router.post('/', PaymentController.createPayment);
 
 export default router;

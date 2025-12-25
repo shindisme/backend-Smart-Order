@@ -3,8 +3,7 @@ import {
     getCategoryByIdModel,
     insertCategoryModel,
     updateCategoryModel,
-    softDeleteCategoryModel,
-    hardDeleteCategoryModel
+    deleteCategoryModel
 } from '../models/category.model.js';
 
 // ! Lấy tất cả
@@ -55,7 +54,6 @@ export async function insertCategory(req, res) {
 export async function updateCategory(req, res) {
     try {
         const { id } = req.params;
-        console.log('BODY UPDATE:', req.body);
         const affected = await updateCategoryModel(id, req.body);
 
         if (affected === 0) {
@@ -68,32 +66,28 @@ export async function updateCategory(req, res) {
     }
 }
 
-// ! Xóa mềm
-export async function softDeleteCategory(req, res) {
+// ! xóa
+export async function deleteCategory(req, res) {
     try {
         const { id } = req.params;
-        const affected = await softDeleteCategoryModel(id);
+        const result = await deleteCategoryModel(id);
 
-        if (affected === 0) {
-            return res.status(404).json({ message: 'Loại sản phẩm không tồn tại' });
+        if (result.status === 'soft_deleted') {
+            return res.status(200).json({
+                message: 'Sản phẩm đang có liên kết, đã ẩn khỏi menu',
+                mode: 'soft',
+                affectedRows: result.affectedRows
+            })
         }
 
-        return res.status(200).json({ message: 'Khoá loại sản phẩm thành công!' });
-    } catch (error) {
-        return res.status(500).json({ message: error.message });
-    }
-}
-
-// ! Xóa cứng
-export async function hardDeleteCategory(req, res) {
-    try {
-        const { id } = req.params;
-        const affected = await hardDeleteCategoryModel(id);
-
-        if (affected === 0) {
-            return res.status(404).json({ message: 'Loại sản phẩm không tồn tại' });
+        if (result.status === 'hard_deleted') {
+            return res.status(200).json({
+                message: 'Xóa thành công',
+                mode: 'hard',
+                affectedRows: result.affectedRows
+            });
         }
-        return res.status(200).json({ message: 'Xóa loại sản phẩm thành công!' });
+
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
