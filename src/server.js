@@ -15,12 +15,11 @@ app.use("/public", express.static("public"));
 AppRouter(app);
 
 app.get('/', (req, res) => {
-    res.send('<h1>Hello</h1>')
-})
+    res.send('<h1>Hello</h1>');
+});
 
 const port = process.env.PORT || 5000;
-const hostname = process.env.HOSTNAME || 'localhost'
 
-app.listen(port, hostname, () => {
-    console.log(`Server đang chạy http://${hostname}:${port}`)
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
 });
