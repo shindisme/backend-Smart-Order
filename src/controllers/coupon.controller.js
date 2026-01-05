@@ -16,7 +16,6 @@ export async function getAllCoupons(req, res) {
             data: coupons
         });
     } catch (error) {
-        console.error('Lỗi lấy danh sách coupon:', error);
         return res.status(500).json({ message: 'Lỗi server' });
     }
 }
@@ -35,32 +34,27 @@ export async function getCouponById(req, res) {
             data: coupon
         });
     } catch (error) {
-        console.error('Lỗi lấy chi tiết coupon:', error);
         return res.status(500).json({ message: 'Lỗi server' });
     }
 }
 
 export async function insertCoupon(req, res) {
     try {
-        const { code, description, type, value, min_amount, max_discount, start_date, end_date, usage_limit, state } = req.body;
+        const { code, type, value, start_date, end_date } = req.body;
 
-        // Validate
         if (!code || type === undefined || !value || !start_date || !end_date) {
             return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
         }
 
-        // Kiểm tra code đã tồn tại
         const exists = await checkCouponCodeExistsModel(code);
         if (exists) {
             return res.status(400).json({ message: 'Mã coupon đã tồn tại' });
         }
 
-        // Validate type
         if (![0, 1].includes(type)) {
-            return res.status(400).json({ message: 'Loại coupon không hợp lệ (0=%, 1=tiền)' });
+            return res.status(400).json({ message: 'Loại coupon không hợp lệ' });
         }
 
-        // Validate dates
         if (new Date(start_date) > new Date(end_date)) {
             return res.status(400).json({ message: 'Ngày bắt đầu phải trước ngày kết thúc' });
         }
@@ -72,7 +66,6 @@ export async function insertCoupon(req, res) {
             coupon_id
         });
     } catch (error) {
-        console.error('Lỗi thêm coupon:', error);
         return res.status(500).json({ message: 'Lỗi server' });
     }
 }
@@ -82,7 +75,6 @@ export async function updateCoupon(req, res) {
         const { id } = req.params;
         const { code } = req.body;
 
-        // Kiểm tra code trùng (trừ chính nó)
         if (code) {
             const exists = await checkCouponCodeExistsModel(code, id);
             if (exists) {
@@ -100,7 +92,6 @@ export async function updateCoupon(req, res) {
             message: 'Cập nhật coupon thành công'
         });
     } catch (error) {
-        console.error('Lỗi cập nhật coupon:', error);
         return res.status(500).json({ message: 'Lỗi server' });
     }
 }
@@ -118,7 +109,6 @@ export async function deleteCoupon(req, res) {
             message: 'Xóa coupon thành công'
         });
     } catch (error) {
-        console.error('Lỗi xóa coupon:', error);
         return res.status(500).json({ message: 'Lỗi server' });
     }
 }
@@ -138,6 +128,7 @@ export async function validateCoupon(req, res) {
         }
 
         return res.status(200).json({
+            success: true,
             message: 'Mã giảm giá hợp lệ',
             data: {
                 coupon: result.coupon,
@@ -145,7 +136,7 @@ export async function validateCoupon(req, res) {
             }
         });
     } catch (error) {
-        console.error('Lỗi validate coupon:', error);
         return res.status(500).json({ message: 'Lỗi server' });
     }
 }
+

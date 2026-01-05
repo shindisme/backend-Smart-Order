@@ -1,11 +1,14 @@
 import { getDashboardStatsModel } from '../models/dashboard.model.js';
 
-export async function getDashboardStats(req, res) {
+export async function getStats(req, res) {
     try {
-        const data = await getDashboardStatsModel();
-        return res.json({ message: 'OK', data });
+        const stats = await getDashboardStatsModel();
+
+        res.status(200).json({
+            message: 'Lấy thống kê thành công',
+            data: stats
+        });
     } catch (error) {
-        console.error('❌ getDashboardStats:', error);
-        return res.status(500).json({ message: 'Lỗi server' });
+        res.status(500).json({ message: 'Lỗi server' });
     }
 }

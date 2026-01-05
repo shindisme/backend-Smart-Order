@@ -15,7 +15,6 @@ export async function getAllOrders(req, res) {
             data: orders
         });
     } catch (error) {
-        console.error('Error getAllOrders:', error);
         res.status(500).json({ message: 'Lỗi server' });
     }
 }
@@ -34,15 +33,23 @@ export async function getOrderDetail(req, res) {
             data: order
         });
     } catch (error) {
-        console.error('Error getOrderDetail:', error);
         res.status(500).json({ message: 'Lỗi server' });
     }
 }
+
 export async function createOrder(req, res) {
     try {
-        const { invoice_id, table_id, user_id, items, note } = req.body;
-
-        console.log('Received order request:', { invoice_id, table_id, items_count: items?.length });
+        const {
+            invoice_id,
+            table_id,
+            user_id,
+            items,
+            note,
+            coupon_id,
+            discount_amount,
+            subtotal,
+            payment_method
+        } = req.body;
 
         if (!table_id || !items || items.length === 0) {
             return res.status(400).json({ message: 'Thiếu table_id hoặc items' });
@@ -53,7 +60,11 @@ export async function createOrder(req, res) {
             table_id,
             user_id,
             items,
-            note
+            note,
+            coupon_id,
+            discount_amount,
+            subtotal,
+            payment_method
         });
 
         res.status(201).json({
@@ -61,15 +72,12 @@ export async function createOrder(req, res) {
             order_id: order_id
         });
     } catch (error) {
-        console.error('Error createOrder:', error.message);
-        console.error('Stack:', error.stack);
         res.status(500).json({
             message: 'Lỗi tạo đơn',
             error: error.message
         });
     }
 }
-
 
 export async function updateOrderState(req, res) {
     try {
@@ -90,7 +98,6 @@ export async function updateOrderState(req, res) {
 
         res.status(200).json({ message: 'Cập nhật thành công' });
     } catch (error) {
-        console.error('Error updateOrderState:', error);
         res.status(500).json({ message: 'Lỗi server' });
     }
 }
@@ -108,7 +115,6 @@ export async function deleteOrder(req, res) {
 
         res.status(200).json({ message: 'Xóa thành công' });
     } catch (error) {
-        console.error('Error deleteOrder:', error);
         res.status(500).json({ message: 'Lỗi server' });
     }
 }
@@ -128,7 +134,6 @@ export async function getOrdersByTableId(req, res) {
             data: orders
         });
     } catch (error) {
-        console.error('Error getOrdersByTableId:', error);
         res.status(500).json({ message: 'Lỗi server' });
     }
 }

@@ -46,7 +46,6 @@ export async function getAllStaffs(req, res) {
             data: staffs
         });
     } catch (error) {
-        console.error('Get all staffs error:', error);
         return res.status(500).json({
             message: 'Lỗi server'
         });
@@ -70,7 +69,6 @@ export async function getStaffById(req, res) {
             data: staff
         });
     } catch (error) {
-        console.error('Get staff by id error:', error);
         return res.status(500).json({
             message: 'Lỗi server'
         });
@@ -121,7 +119,6 @@ export async function insertStaff(req, res) {
             role
         });
 
-        // ⭐ GỬI EMAIL CHÀO MỪNG
         try {
             await sendNewAccountEmail(
                 email.toLowerCase().trim(),
@@ -129,10 +126,8 @@ export async function insertStaff(req, res) {
                 username,
                 randomPassword
             );
-            console.log('✅ Email chào mừng đã gửi đến:', email);
-        } catch (emailError) {
-            console.log('⚠️ Không thể gửi email chào mừng:', emailError.message);
-            // Không block việc tạo user nếu email lỗi
+        } catch (error) {
+
         }
 
         return res.status(201).json({
@@ -140,7 +135,7 @@ export async function insertStaff(req, res) {
             data: {
                 user_id,
                 username,
-                password: randomPassword, // Hiển thị cho admin
+                password: randomPassword,
                 fullname,
                 email,
                 role
@@ -148,7 +143,6 @@ export async function insertStaff(req, res) {
         });
 
     } catch (error) {
-        console.error('Create staff error:', error);
         return res.status(500).json({
             message: 'Lỗi server: ' + error.message
         });
@@ -166,14 +160,12 @@ export async function updateStaff(req, res) {
             });
         }
 
-        // Email bắt buộc khi update
         if (!email || email.trim() === '') {
             return res.status(400).json({
                 message: 'Email không được để trống'
             });
         }
 
-        // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email.trim())) {
             return res.status(400).json({
@@ -199,16 +191,12 @@ export async function updateStaff(req, res) {
         });
 
     } catch (error) {
-        console.error('Update staff error:', error);
         return res.status(500).json({
             message: 'Lỗi server'
         });
     }
 }
 
-/**
- * ⭐ XÓA NHÂN VIÊN THÔNG MINH
- */
 export async function deleteStaff(req, res) {
     try {
         const { id } = req.params;
@@ -226,12 +214,11 @@ export async function deleteStaff(req, res) {
             });
         }
 
-        // Gọi hàm xóa thông minh
         const result = await deleteStaffModel(id);
 
         return res.status(200).json({
             message: result.message,
-            deleteType: result.type, // 'soft_delete' hoặc 'hard_delete'
+            deleteType: result.type,
             data: {
                 username: staff.username,
                 fullname: staff.fullname
@@ -239,7 +226,6 @@ export async function deleteStaff(req, res) {
         });
 
     } catch (error) {
-        console.error('Delete staff error:', error);
         return res.status(500).json({
             message: 'Lỗi server: ' + error.message
         });
@@ -271,7 +257,7 @@ export async function resetStaffPassword(req, res) {
         // Cập nhật password
         await updatePasswordModel(id, hashedPassword);
 
-        // Gửi email
+        // Gửi mail
         try {
             await sendPasswordResetEmail(
                 staff.email,
@@ -291,9 +277,7 @@ export async function resetStaffPassword(req, res) {
                 }
             });
 
-        } catch (emailError) {
-            console.error('Email error:', emailError);
-
+        } catch (error) {
             return res.status(500).json({
                 success: false,
                 message: 'Đã tạo mật khẩu mới nhưng không thể gửi email. Vui lòng kiểm tra cấu hình email.'
@@ -301,7 +285,6 @@ export async function resetStaffPassword(req, res) {
         }
 
     } catch (error) {
-        console.error('Reset password error:', error);
         return res.status(500).json({
             success: false,
             message: 'Lỗi server'

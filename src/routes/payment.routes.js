@@ -1,3 +1,4 @@
+// src/routes/payment.routes.js
 import express from 'express';
 import * as PaymentController from '../controllers/payment.controller.js';
 
@@ -7,5 +8,9 @@ const router = express.Router();
 router.get('/', PaymentController.getAllPayments);
 router.get('/:id', PaymentController.getPaymentById);
 router.post('/', PaymentController.createPayment);
+
+
+router.post('/vnpay/create-payment-url', PaymentController.createVnpayPaymentUrlController);
+router.get('/vnpay/vnpay-return', PaymentController.vnpayReturnController);
 
 export default router;

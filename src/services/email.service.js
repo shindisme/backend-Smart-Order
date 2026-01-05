@@ -18,13 +18,13 @@ const transporter = nodemailer.createTransport({
 });
 
 
-transporter.verify(function (error, success) {
-    if (error) {
-        console.log('Lỗi dịch vụ Email:', error.message);
-    } else {
-        console.log('Dịch vụ Email sẵn sàng gửi thư');
-    }
-});
+// transporter.verify(function (error, success) {
+//     if (error) {
+//         console.log('Lỗi gửi mail:', error.message);
+//     } else {
+//         console.log('Mail sẵn sàng gửi thư');
+//     }
+// });
 
 export async function sendPasswordResetEmail(email, fullname, username, newPassword) {
     try {
@@ -162,8 +162,7 @@ export async function sendPasswordResetEmail(email, fullname, username, newPassw
         const info = await transporter.sendMail(mailOptions);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Lỗi gửi email:', error);
-        throw new Error('Không thể gửi email. Vui lòng kiểm tra cấu hình email.');
+        throw new Error('Không thể gửi email.');
     }
 }
 
@@ -211,7 +210,6 @@ export async function sendNewAccountEmail(email, fullname, username, password) {
         const info = await transporter.sendMail(mailOptions);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Lỗi gửi mail:', error);
         return { success: false, error: error.message };
     }
 }

@@ -3,8 +3,7 @@ import pool from '../config/db.js';
 
 export async function getAllCouponsModel() {
     const [rows] = await pool.query(
-        `SELECT * FROM coupons
-         WHERE is_deleted = 0`
+        `SELECT * FROM coupons WHERE is_deleted = 0`
     );
     return rows;
 }
@@ -107,7 +106,6 @@ export async function validateCouponModel(code, totalAmount) {
 
     const coupon = rows[0];
 
-    // Kiểm tra đơn tối thiểu
     if (coupon.min_amount > totalAmount) {
         return {
             valid: false,
@@ -115,22 +113,26 @@ export async function validateCouponModel(code, totalAmount) {
         };
     }
 
-    // Tính discount
     let discount = 0;
     if (coupon.type === 0) {
-        // giảm %
         discount = Math.floor(totalAmount * coupon.value / 100);
         if (coupon.max_discount && discount > coupon.max_discount) {
             discount = coupon.max_discount;
         }
     } else {
-        // giảm tiền
         discount = coupon.value;
     }
 
-    return {
-        valid: true,
-        coupon,
-        discount
-    };
+    return { valid: true, coupon, discount };
+}
+
+export async function incrementUsageModel(coupon_id) {
+    const [result] = await pool.query(
+        `UPDATE coupons 
+         SET used_count = used_count + 1 
+         WHERE coupon_id = ? 
+         AND (usage_limit IS NULL OR used_count < usage_limit)`,
+        [coupon_id]
+    );
+    return result.affectedRows;
 }

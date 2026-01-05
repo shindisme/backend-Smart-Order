@@ -22,9 +22,7 @@ export async function getOrderDetailModel(order_id) {
         [order_id]
     );
 
-    if (orders.length === 0) {
-        return null;
-    }
+    if (orders.length === 0) return null;
 
     const order = orders[0];
 
@@ -56,54 +54,57 @@ export async function getOrderDetailModel(order_id) {
     }
 
     order.items = items;
-    order.total_amount = items.reduce((sum, item) => sum + Number(item.total || 0), 0);
-
     return order;
 }
 
 export async function createOrderModel(orderData) {
-    const { invoice_id, table_id, user_id, items, note } = orderData;
+    const { table_id, user_id, items, note } = orderData;
     const connection = await pool.getConnection();
 
     try {
         await connection.beginTransaction();
 
-        const order_id = uuidv7();
-        const totalAmount = items.reduce((sum, item) => sum + Number(item.total || 0), 0);
+        let invoice_id = null;
+        const [existingInvoice] = await connection.query(
+            `SELECT invoice_id FROM invoices WHERE table_id = ? AND status = 0 LIMIT 1`,
+            [table_id]
+        );
 
-        console.log('Creating order:', { order_id, invoice_id, table_id, totalAmount });
+        if (existingInvoice.length > 0) {
+            invoice_id = existingInvoice[0].invoice_id;
+        } else {
+            invoice_id = uuidv7();
+            await connection.query(
+                `INSERT INTO invoices (invoice_id, table_id, total, discount, final_total, status, created_at)
+                 VALUES (?, ?, 0, 0, 0, 0, NOW())`,
+                [invoice_id, table_id]
+            );
+
+            await connection.query(
+                `UPDATE tables SET state = 1 WHERE table_id = ?`,
+                [table_id]
+            );
+        }
+
+        const order_id = uuidv7();
 
         await connection.query(
-            `INSERT INTO orders (order_id, invoice_id, table_id, user_id, note, state, total_amount, created_at)
-             VALUES (?, ?, ?, ?, ?, 0, ?, NOW())`,
-            [order_id, invoice_id || null, table_id, user_id || null, note || null, totalAmount]
+            `INSERT INTO orders (order_id, invoice_id, table_id, user_id, note, state, created_at)
+             VALUES (?, ?, ?, ?, ?, 0, NOW())`,
+            [order_id, invoice_id, table_id, user_id || null, note || null]
         );
 
         for (const item of items) {
-            // ✅ VALIDATE ITEM EXISTS
             const [existingItems] = await connection.query(
                 `SELECT item_id, name, is_deleted FROM items WHERE item_id = ?`,
                 [item.item_id]
             );
 
-            if (existingItems.length === 0) {
-                throw new Error(`Món với ID "${item.item_id}" không tồn tại trong hệ thống`);
-            }
-
-            if (existingItems[0].is_deleted === 1) {
-                throw new Error(`Món "${existingItems[0].name}" đã bị xóa`);
+            if (existingItems.length === 0 || existingItems[0].is_deleted === 1) {
+                throw new Error(`Món không tồn tại hoặc đã bị xóa`);
             }
 
             const detail_id = uuidv7();
-
-            console.log('Creating order detail:', {
-                detail_id,
-                item_id: item.item_id,
-                item_name: existingItems[0].name,
-                quantity: item.quantity,
-                total: item.total
-            });
-
             await connection.query(
                 `INSERT INTO order_details (order_detail_id, order_id, item_id, quantity, total, note)
                  VALUES (?, ?, ?, ?, ?, ?)`,
@@ -113,40 +114,46 @@ export async function createOrderModel(orderData) {
             if (item.options && item.options.length > 0) {
                 for (const opt of item.options) {
                     if (opt.option_id) {
-                        // ✅ VALIDATE OPTION EXISTS
                         const [existingOptions] = await connection.query(
                             `SELECT option_id FROM options WHERE option_id = ?`,
                             [opt.option_id]
                         );
 
-                        if (existingOptions.length === 0) {
-                            console.warn(`Option ${opt.option_id} không tồn tại, bỏ qua`);
-                            continue;
+                        if (existingOptions.length > 0) {
+                            await connection.query(
+                                `INSERT INTO options_order_details (order_detail_id, option_id)
+                                 VALUES (?, ?)`,
+                                [detail_id, opt.option_id]
+                            );
                         }
-
-                        await connection.query(
-                            `INSERT INTO options_order_details (order_detail_id, option_id)
-                             VALUES (?, ?)`,
-                            [detail_id, opt.option_id]
-                        );
                     }
                 }
             }
         }
 
+        await connection.query(
+            `UPDATE invoices i
+             SET i.total = (
+                 SELECT COALESCE(SUM(od.total), 0)
+                 FROM orders o
+                 INNER JOIN order_details od ON o.order_id = od.order_id
+                 WHERE o.invoice_id = i.invoice_id
+             ),
+             i.final_total = i.total - i.discount
+             WHERE i.invoice_id = ?`,
+            [invoice_id]
+        );
+
         await connection.commit();
-        console.log('Order created successfully:', order_id);
         return order_id;
 
     } catch (error) {
         await connection.rollback();
-        console.error('Error in createOrderModel:', error.message);
         throw error;
     } finally {
         connection.release();
     }
 }
-
 
 export async function updateOrderStateModel(order_id, state) {
     const [result] = await pool.query(
@@ -162,6 +169,16 @@ export async function deleteOrderModel(order_id) {
     try {
         await connection.beginTransaction();
 
+        const [order] = await connection.query(
+            `SELECT order_id, invoice_id FROM orders WHERE order_id = ? AND state = 0`,
+            [order_id]
+        );
+
+        if (order.length === 0) {
+            await connection.rollback();
+            return 0;
+        }
+
         const [details] = await connection.query(
             `SELECT order_detail_id FROM order_details WHERE order_id = ?`,
             [order_id]
@@ -176,14 +193,43 @@ export async function deleteOrderModel(order_id) {
         }
 
         await connection.query(`DELETE FROM order_details WHERE order_id = ?`, [order_id]);
+        await connection.query(`DELETE FROM orders WHERE order_id = ?`, [order_id]);
 
-        const [result] = await connection.query(
-            `DELETE FROM orders WHERE order_id = ? AND state = 0`,
-            [order_id]
-        );
+        if (order[0].invoice_id) {
+            await connection.query(
+                `UPDATE invoices i
+                 SET i.total = (
+                     SELECT COALESCE(SUM(od.total), 0)
+                     FROM orders o
+                     INNER JOIN order_details od ON o.order_id = od.order_id
+                     WHERE o.invoice_id = i.invoice_id
+                 ),
+                 i.final_total = i.total - i.discount
+                 WHERE i.invoice_id = ?`,
+                [order[0].invoice_id]
+            );
+
+            const [remainingOrders] = await connection.query(
+                `SELECT COUNT(*) as count FROM orders WHERE invoice_id = ?`,
+                [order[0].invoice_id]
+            );
+
+            if (remainingOrders[0].count === 0) {
+                const [invoice] = await connection.query(
+                    `SELECT table_id FROM invoices WHERE invoice_id = ?`,
+                    [order[0].invoice_id]
+                );
+
+                await connection.query(`DELETE FROM invoices WHERE invoice_id = ?`, [order[0].invoice_id]);
+
+                if (invoice.length > 0) {
+                    await connection.query(`UPDATE tables SET state = 0 WHERE table_id = ?`, [invoice[0].table_id]);
+                }
+            }
+        }
 
         await connection.commit();
-        return result.affectedRows;
+        return 1;
 
     } catch (error) {
         await connection.rollback();

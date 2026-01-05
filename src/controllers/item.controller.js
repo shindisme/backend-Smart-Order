@@ -18,7 +18,6 @@ export async function getAllItems(req, res) {
             data: items
         });
     } catch (error) {
-        console.error("Lỗi lấy danh sách:", error);
         return res.status(500).json({
             message: 'Lỗi server'
         });
@@ -71,7 +70,6 @@ export async function insertItem(req, res) {
         });
 
     } catch (error) {
-        console.error("Lỗi thêm san pham:", error);
         return res.status(500).json({ message: 'Có lỗi xảy ra khi thêm sản phẩm' });
     }
 }
@@ -162,7 +160,6 @@ export async function getItemById(req, res) {
         });
 
     } catch (error) {
-        console.error("Lỗi lấy chi tiết:", error);
         return res.status(500).json({ message: error.message });
     }
 }

@@ -1,7 +1,6 @@
 import { v7 as uuidv7 } from 'uuid';
 import pool from '../config/db.js';
 
-// tạo payment + update invoice thành paid
 export async function insertPaymentModel(data) {
     const { invoice_id, amount, payment_method, payment_channel, payment_reference } = data;
     const payment_id = uuidv7();
@@ -11,7 +10,6 @@ export async function insertPaymentModel(data) {
     try {
         await connection.beginTransaction();
 
-        // insert payment
         await connection.query(
             `INSERT INTO payments (
                 payment_id, invoice_id, amount, status,
@@ -29,7 +27,6 @@ export async function insertPaymentModel(data) {
             ]
         );
 
-        // update invoice thành paid
         await connection.query(
             `UPDATE invoices
              SET status = 'paid', paid_at = NOW()
@@ -63,7 +60,6 @@ export async function getAllPaymentsModel(invoice_id) {
 
     const params = [];
 
-    // filter theo invoice_id nếu có
     if (invoice_id) {
         sql += ` AND p.invoice_id = ?`;
         params.push(invoice_id);
@@ -91,4 +87,77 @@ export async function getPaymentByIdModel(payment_id) {
     );
 
     return rows.length > 0 ? rows[0] : null;
+}
+
+export async function createPendingPaymentModel(invoice_id, amount) {
+    const payment_id = uuidv7();
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        await connection.query(
+            `INSERT INTO payments (
+                payment_id, invoice_id, amount, status,
+                payment_method, payment_channel, payment_reference,
+                created_at, paid_at
+            )
+            VALUES (?, ?, ?, 0, 'vnpay', 'online', NULL, NOW(), NULL)`,
+            [payment_id, invoice_id, amount]
+        );
+
+        await connection.commit();
+        return payment_id;
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
+// update payment success
+export async function updatePaymentSuccessModel(payment_id, vnp_TransactionNo) {
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        // update payments
+        await connection.query(
+            `UPDATE payments
+             SET status = 1,
+                 payment_reference = ?,
+                 paid_at = NOW()
+             WHERE payment_id = ?`,
+            [vnp_TransactionNo || null, payment_id]
+        );
+
+        // update invoice = paid
+        await connection.query(
+            `UPDATE invoices i
+             JOIN payments p ON i.invoice_id = p.invoice_id
+             SET i.status = 1,
+                 i.paid_at = NOW()
+             WHERE p.payment_id = ?`,
+            [payment_id]
+        );
+
+        await connection.commit();
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
+// update payment failed
+export async function updatePaymentFailedModel(payment_id) {
+    await pool.query(
+        `UPDATE payments
+         SET status = 2
+         WHERE payment_id = ?`,
+        [payment_id]
+    );
 }
