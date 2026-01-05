@@ -63,7 +63,7 @@ export async function updateOptionGroupModel(id, data) {
     return rows.affectedRows;
 }
 
-//!  Xoa
+//!Xoa
 //check contraint
 async function checkOptionGroupConstraint(group_id) {
     const [optionRows] = await pool.query(

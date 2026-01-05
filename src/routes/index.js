@@ -11,6 +11,8 @@ import invoiceRoutes from './invoice.routes.js';
 import paymentRoutes from './payment.routes.js';
 import optionGroupRoutes from './optionGroup.routes.js';
 import optionRoutes from './option.routes.js';
+import couponRoutes from './coupon.route.js';
+import dashboardRoutes from './dashboard.route.js';
 
 const router = express.Router();
 
@@ -20,12 +22,14 @@ export function AppRouter(app) {
     router.use('/orders', orderRoutes);
     router.use('/order-details', orderDetailRoutes);
     router.use('/tables', tableRoutes);
-    router.use('/staff', staffRoutes);
+    router.use('/staffs', staffRoutes);
     router.use('/auth', authRoutes);
     router.use('/invoices', invoiceRoutes);
     router.use('/payments', paymentRoutes);
     router.use('/option-groups', optionGroupRoutes);
     router.use('/options', optionRoutes);
+    router.use('/coupons', couponRoutes);
+    router.use('/dashboard', dashboardRoutes);
 
     app.use('/api/v1', router);
 };

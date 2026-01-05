@@ -3,9 +3,10 @@ import * as OrderController from '../controllers/order.controller.js';
 
 const router = express.Router();
 
-// /api/orders
-router.get('/', OrderController.getOrdersByInvoiceId);
-router.post('/', OrderController.insertOrder);
+router.get('/', OrderController.getAllOrders);
+router.get('/table', OrderController.getOrdersByTableId);
+router.get('/:id', OrderController.getOrderDetail);
+router.post('/', OrderController.createOrder);
 router.patch('/:id', OrderController.updateOrderState);
 router.delete('/:id', OrderController.deleteOrder);
 
