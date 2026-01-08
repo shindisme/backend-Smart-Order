@@ -74,7 +74,7 @@ export async function getUser(req, res) {
         });
 
     } catch (error) {
-        console.error('Get me error:', error);
+        console.error('Lỗi:', error);
         return res.status(500).json({
             message: 'Lỗi server'
         });

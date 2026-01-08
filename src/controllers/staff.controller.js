@@ -22,18 +22,15 @@ function generateRandomPassword(length = 12) {
     const allChars = uppercase + lowercase + numbers + special;
     let password = '';
 
-    // Đảm bảo có ít nhất 1 ký tự mỗi loại
     password += uppercase[Math.floor(Math.random() * uppercase.length)];
     password += lowercase[Math.floor(Math.random() * lowercase.length)];
     password += numbers[Math.floor(Math.random() * numbers.length)];
     password += special[Math.floor(Math.random() * special.length)];
 
-    // Thêm các ký tự còn lại
     for (let i = password.length; i < length; i++) {
         password += allChars[Math.floor(Math.random() * allChars.length)];
     }
 
-    // Xáo trộn password
     return password.split('').sort(() => Math.random() - 0.5).join('');
 }
 
@@ -79,21 +76,18 @@ export async function insertStaff(req, res) {
     try {
         const { username, fullname, email, role } = req.body;
 
-        // Validation đầy đủ
         if (!username || !fullname || !role) {
             return res.status(400).json({
                 message: 'Vui lòng nhập đầy đủ thông tin'
             });
         }
 
-        // Email bắt buộc
         if (!email || email.trim() === '') {
             return res.status(400).json({
                 message: 'Email không được để trống'
             });
         }
 
-        // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email.trim())) {
             return res.status(400).json({
@@ -243,18 +237,15 @@ export async function resetStaffPassword(req, res) {
             });
         }
 
-        // Kiểm tra email
         if (!staff.email || staff.email.trim() === '') {
             return res.status(400).json({
                 message: 'Nhân viên chưa có email. Vui lòng cập nhật email trước khi cấp lại mật khẩu.'
             });
         }
 
-        // Tạo mật khẩu mới
         const randomPassword = generateRandomPassword(12);
         const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-        // Cập nhật password
         await updatePasswordModel(id, hashedPassword);
 
         // Gửi mail

@@ -46,71 +46,49 @@ export async function updateStaffModel(user_id, data) {
     return result.affectedRows;
 }
 
-/**
- * ⭐ Kiểm tra nhân viên có ràng buộc với dữ liệu khác không
- * Thêm các bảng liên quan của bạn vào đây
- */
 export async function checkStaffHasRelations(user_id) {
     try {
-        // Ví dụ: Kiểm tra các bảng có thể liên quan đến user_id
-        // Thay đổi theo cấu trúc database của bạn
-
         const tables = [
-            'orders',      // Đơn hàng
-            'invoices',    // Hóa đơn
-            'activity_logs', // Lịch sử hoạt động
-            // Thêm các bảng khác nếu có
+            'orders',
+            'invoices',
+            'activity_logs',
         ];
 
         for (const table of tables) {
             try {
-                // Kiểm tra xem bảng có tồn tại không
                 const [checkTable] = await pool.query(
                     `SHOW TABLES LIKE ?`,
                     [table]
                 );
 
                 if (checkTable.length > 0) {
-                    // Kiểm tra có record nào liên quan không
                     const [rows] = await pool.query(
                         `SELECT COUNT(*) as count FROM ${table} WHERE user_id = ?`,
                         [user_id]
                     );
 
                     if (rows[0].count > 0) {
-                        console.log(`✋ Nhân viên có ${rows[0].count} bản ghi trong bảng ${table}`);
-                        return true; // Có ràng buộc
+                        return true;
                     }
                 }
             } catch (tableError) {
-                // Bảng không tồn tại hoặc không có cột user_id, bỏ qua
-                console.log(`⚠️ Bỏ qua bảng ${table}:`, tableError.message);
+                console.log(tableError.message);
             }
         }
 
-        console.log('✅ Nhân viên không có ràng buộc, có thể xóa vĩnh viễn');
-        return false; // Không có ràng buộc
+        return false;
 
     } catch (error) {
-        console.error('❌ Lỗi kiểm tra ràng buộc:', error);
-        // Nếu lỗi, an toàn hơn là xóa mềm
+        console.error('Lỗi:', error);
         return true;
     }
 }
 
-/**
- * ⭐ Xóa nhân viên thông minh
- * - Nếu không có ràng buộc: XÓA THẬT
- * - Nếu có ràng buộc: XÓA MỀM (is_deleted = 1)
- */
 export async function deleteStaffModel(user_id) {
     try {
-        // Kiểm tra ràng buộc
         const hasRelations = await checkStaffHasRelations(user_id);
 
         if (hasRelations) {
-            // CÓ ràng buộc → XÓA MỀM
-            console.log('🔄 Xóa mềm nhân viên (có ràng buộc)');
             const [result] = await pool.query(
                 `UPDATE users
                  SET is_deleted = 1
@@ -120,11 +98,9 @@ export async function deleteStaffModel(user_id) {
             return {
                 affectedRows: result.affectedRows,
                 type: 'soft_delete',
-                message: 'Nhân viên đã được ẩn (vẫn giữ dữ liệu liên quan)'
+                message: 'Nhân viên đã được ẩn '
             };
         } else {
-            // KHÔNG có ràng buộc → XÓA THẬT
-            console.log('🗑️ Xóa vĩnh viễn nhân viên (không có ràng buộc)');
             const [result] = await pool.query(
                 `DELETE FROM users WHERE user_id = ?`,
                 [user_id]
@@ -137,7 +113,7 @@ export async function deleteStaffModel(user_id) {
         }
 
     } catch (error) {
-        console.error('❌ Lỗi xóa nhân viên:', error);
+        console.error('Lỗi', error);
         throw error;
     }
 }

@@ -104,7 +104,6 @@ export async function updateItem(req, res) {
             return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
         }
 
-        // update nhóm (xóa cũ -->thêm mới)
         await deleteGroupsByItemIdModel(id);
         await insertItemGroupsModel(id, group_ids);
 

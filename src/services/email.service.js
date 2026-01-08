@@ -17,15 +17,6 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-
-// transporter.verify(function (error, success) {
-//     if (error) {
-//         console.log('Lỗi gửi mail:', error.message);
-//     } else {
-//         console.log('Mail sẵn sàng gửi thư');
-//     }
-// });
-
 export async function sendPasswordResetEmail(email, fullname, username, newPassword) {
     try {
         const mailOptions = {

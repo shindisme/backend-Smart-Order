@@ -20,7 +20,6 @@ export async function getAllInvoicesModel() {
 export async function getInvoiceByIdModel(invoice_id) {
     try {
 
-        // Get háo dơn info
         const [invoices] = await pool.query(
             `SELECT 
                 i.*,
@@ -37,7 +36,6 @@ export async function getInvoiceByIdModel(invoice_id) {
 
         const invoice = invoices[0];
 
-        // Get orders
         const [orders] = await pool.query(
             `SELECT o.order_id, o.state, o.created_at, o.note
              FROM orders o
