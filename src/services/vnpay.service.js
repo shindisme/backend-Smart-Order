@@ -67,5 +67,5 @@ export function createVnpayPaymentUrl({ amount, orderId, ipAddr }) {
         vnp_SecureHash: signed
     };
 
-    return `${vnp_Url}?${qs.stringify(fullParams)}`;
+    return `${vnp_Url}?${qs.stringify(fullParams, { encode: false })}`;
 }
