@@ -9,7 +9,7 @@ import {
 import {
     createVnpayPaymentUrl,
     sortObject
-} from '../utils/vnpay.util.js';
+} from '../services/vnpay.service.js';
 import qs from 'qs';
 import crypto from 'crypto';
 

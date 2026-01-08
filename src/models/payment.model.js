@@ -16,11 +16,12 @@ export async function insertPaymentModel(data) {
                 payment_method, payment_channel, payment_reference,
                 created_at, paid_at
              )
-             VALUES (?, ?, ?, 1, ?, ?, ?, NOW(), NOW())`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
             [
                 payment_id,
                 invoice_id,
                 amount,
+                1,
                 payment_method,
                 payment_channel,
                 payment_reference

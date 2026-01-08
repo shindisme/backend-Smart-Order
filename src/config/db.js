@@ -10,7 +10,6 @@ const pool = mysql.createPool({
 
 });
 
-// check
 pool.getConnection()
     .then(() => {
         console.log('Kết nối MYSQL thành công!');
