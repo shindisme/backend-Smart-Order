@@ -106,24 +106,23 @@ export async function createVnpayPaymentUrlController(req, res) {
             req.socket.remoteAddress ||
             req.ip;
 
+        const cleanIp = ipAddr ? ipAddr.split(',')[0].trim() : '127.0.0.1';
+
         const paymentUrl = createVnpayPaymentUrl({
             amount,
             orderId: payment_id,
-            ipAddr
+            ipAddr: cleanIp
         });
-
         return res.status(200).json({
             message: 'Tạo URL thanh toán VNPay thành công',
             payment_id,
             payment_url: paymentUrl
         });
     } catch (error) {
-        console.error('Error createVnpayPaymentUrlController:', error);
         return res.status(500).json({ message: 'Lỗi server' });
     }
 }
 
-// VNPay trả về (return URL)
 export async function vnpayReturnController(req, res) {
     try {
         const vnp_HashSecret = process.env.VNP_HASH_SECRET;
@@ -155,7 +154,6 @@ export async function vnpayReturnController(req, res) {
             );
         }
     } catch (error) {
-        console.error('Error vnpayReturnController:', error);
         return res.status(500).json({ message: 'Lỗi server' });
     }
 }
