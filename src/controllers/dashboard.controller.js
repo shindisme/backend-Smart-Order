@@ -9,6 +9,10 @@ export async function getStats(req, res) {
             data: stats
         });
     } catch (error) {
-        res.status(500).json({ message: 'Lỗi server' });
+
+        res.status(500).json({
+            message: 'Lỗi server',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 }

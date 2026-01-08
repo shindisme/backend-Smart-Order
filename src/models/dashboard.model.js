@@ -49,9 +49,9 @@ export async function getDashboardStatsModel() {
 
     const [orderStats] = await pool.query(
         `SELECT 
-            SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END) as pending,
-            SUM(CASE WHEN state = 1 THEN 1 ELSE 0 END) as processing,
-            SUM(CASE WHEN state = 2 THEN 1 ELSE 0 END) as completed
+            COALESCE(SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END), 0) as pending,
+            COALESCE(SUM(CASE WHEN state = 1 THEN 1 ELSE 0 END), 0) as processing,
+            COALESCE(SUM(CASE WHEN state = 2 THEN 1 ELSE 0 END), 0) as completed
          FROM orders
          WHERE created_at BETWEEN ? AND ?`,
         [startOfDay, endOfDay]
@@ -66,10 +66,8 @@ export async function getDashboardStatsModel() {
             t.name as table_name
          FROM orders o
          LEFT JOIN tables t ON o.table_id = t.table_id
-         WHERE o.created_at BETWEEN ? AND ?
          ORDER BY o.created_at DESC
-         LIMIT 10`,
-        [startOfDay, endOfDay]
+         LIMIT 10`
     );
 
     const [recentInvoices] = await pool.query(
@@ -87,30 +85,38 @@ export async function getDashboardStatsModel() {
          LIMIT 10`
     );
 
-    const [revenueChart] = await pool.query(
-        `SELECT 
-            DATE_FORMAT(created_at, '%d/%m') as date,
-            COALESCE(SUM(final_total), 0) as revenue
-         FROM invoices
-         WHERE status = 1 
-         AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-         GROUP BY DATE(created_at)
-         ORDER BY created_at ASC`
-    );
+    const revenueChart = [];
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        const [result] = await pool.query(
+            `SELECT COALESCE(SUM(final_total), 0) as revenue
+             FROM invoices
+             WHERE status = 1 AND DATE(created_at) = ?`,
+            [dateStr]
+        );
+
+        revenueChart.push({
+            date: `${date.getDate()}/${date.getMonth() + 1}`,
+            revenue: parseFloat(result[0]?.revenue || 0)
+        });
+    }
 
     return {
-        todayRevenue: parseFloat(todayRevenue[0].total) || 0,
-        previousRevenue: parseFloat(yesterdayRevenue[0].total) || 0,
-        todayOrders: parseInt(todayOrders[0].count) || 0,
-        previousOrders: parseInt(yesterdayOrders[0].count) || 0,
-        totalTables: parseInt(tables[0].total) || 0,
-        tablesInUse: parseInt(tables[0].in_use) || 0,
-        availableTables: parseInt(tables[0].available) || 0,
-        pendingOrders: parseInt(orderStats[0].pending) || 0,
-        processingOrders: parseInt(orderStats[0].processing) || 0,
-        completedOrders: parseInt(orderStats[0].completed) || 0,
-        recentOrders: recentOrders,
-        recentInvoices: recentInvoices,
+        todayRevenue: parseFloat(todayRevenue[0]?.total || 0),
+        previousRevenue: parseFloat(yesterdayRevenue[0]?.total || 0),
+        todayOrders: parseInt(todayOrders[0]?.count || 0),
+        previousOrders: parseInt(yesterdayOrders[0]?.count || 0),
+        totalTables: parseInt(tables[0]?.total || 0),
+        tablesInUse: parseInt(tables[0]?.in_use || 0),
+        availableTables: parseInt(tables[0]?.available || 0),
+        pendingOrders: parseInt(orderStats[0]?.pending || 0),
+        processingOrders: parseInt(orderStats[0]?.processing || 0),
+        completedOrders: parseInt(orderStats[0]?.completed || 0),
+        recentOrders: recentOrders || [],
+        recentInvoices: recentInvoices || [],
         revenueChart: revenueChart
     };
 }
