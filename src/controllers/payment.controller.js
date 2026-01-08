@@ -97,7 +97,6 @@ export async function createVnpayPaymentUrlController(req, res) {
             return res.status(400).json({ message: 'Số tiền không hợp lệ' });
         }
 
-        // tạo payment pending
         const payment_id = await createPendingPaymentModel(invoice_id, amount);
 
         const ipAddr =
@@ -106,27 +105,38 @@ export async function createVnpayPaymentUrlController(req, res) {
             req.socket.remoteAddress ||
             req.ip;
 
+        // ✅ Lấy IP đầu tiên
         const cleanIp = ipAddr ? ipAddr.split(',')[0].trim() : '127.0.0.1';
+
+        console.log('🌐 IP:', { original: ipAddr, clean: cleanIp });
+        console.log('💰 Payment:', { invoice_id, amount, payment_id });
 
         const paymentUrl = createVnpayPaymentUrl({
             amount,
             orderId: payment_id,
             ipAddr: cleanIp
         });
+
+        console.log('✅ URL created, length:', paymentUrl.length);
+
         return res.status(200).json({
             message: 'Tạo URL thanh toán VNPay thành công',
             payment_id,
             payment_url: paymentUrl
         });
     } catch (error) {
+        console.error('❌ Error createVnpayPaymentUrlController:', error);
         return res.status(500).json({ message: 'Lỗi server' });
     }
 }
+
 
 export async function vnpayReturnController(req, res) {
     try {
         const vnp_HashSecret = process.env.VNP_HASH_SECRET;
         let vnp_Params = { ...req.query };
+
+        console.log('🔙 VNPay Return Params:', vnp_Params);
 
         const secureHash = vnp_Params['vnp_SecureHash'];
         delete vnp_Params['vnp_SecureHash'];
@@ -134,26 +144,39 @@ export async function vnpayReturnController(req, res) {
 
         vnp_Params = sortObject(vnp_Params);
         const signData = qs.stringify(vnp_Params, { encode: false });
+
+        console.log('🔐 Return SignData:', signData);
+
         const hmac = crypto.createHmac('sha512', vnp_HashSecret);
         const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+
+        console.log('🔑 Hash Compare:', {
+            vnpay: secureHash?.substring(0, 20),
+            ours: signed.substring(0, 20),
+            match: secureHash === signed
+        });
 
         const payment_id = vnp_Params['vnp_TxnRef'];
         const vnp_ResponseCode = vnp_Params['vnp_ResponseCode'];
         const vnp_TransactionNo = vnp_Params['vnp_TransactionNo'];
 
         if (secureHash === signed && vnp_ResponseCode === '00') {
+            console.log('✅ Payment SUCCESS:', payment_id);
             await updatePaymentSuccessModel(payment_id, vnp_TransactionNo);
 
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment-success?payment_id=${payment_id}`
+                `${process.env.FRONTEND_URL}/payment-success?payment_id=${payment_id}`
             );
         } else {
+            console.log('❌ Payment FAILED:', { payment_id, code: vnp_ResponseCode });
             await updatePaymentFailedModel(payment_id);
+
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment-fail?payment_id=${payment_id}`
+                `${process.env.FRONTEND_URL}/payment-fail?payment_id=${payment_id}`
             );
         }
     } catch (error) {
+        console.error('❌ Error vnpayReturnController:', error);
         return res.status(500).json({ message: 'Lỗi server' });
     }
 }
