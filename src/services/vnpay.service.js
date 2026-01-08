@@ -12,13 +12,15 @@ export function sortObject(obj) {
 export function createVnpayPaymentUrl({ amount, orderId, ipAddr }) {
     const vnp_TmnCode = process.env.VNP_TMN_CODE;
     const vnp_HashSecret = process.env.VNP_HASH_SECRET;
-    const vnp_Url = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
+    const vnp_Url = process.env.VNP_URL;
     const vnp_ReturnUrl = process.env.VNP_RETURN_URL;
 
     const date = new Date();
-    const createDate = date.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
-    const expireDate = new Date(date.getTime() + 15 * 60 * 1000)
-        .toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+    const vnDate = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+    const createDate = vnDate.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+    const expireDate = new Date(vnDate.getTime() + 15 * 60 * 1000)
+        .toISOString()
+        .replace(/[-:TZ.]/g, '').slice(0, 14);
 
     const vnp_Params = {
         vnp_Version: '2.1.0',

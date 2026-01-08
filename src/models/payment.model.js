@@ -46,7 +46,6 @@ export async function insertPaymentModel(data) {
     }
 }
 
-// lấy tất cả
 export async function getAllPaymentsModel(invoice_id) {
     let sql = `
         SELECT 
@@ -72,7 +71,6 @@ export async function getAllPaymentsModel(invoice_id) {
     return rows;
 }
 
-// lấy 1 payment 
 export async function getPaymentByIdModel(payment_id) {
     const [rows] = await pool.query(
         `SELECT 
@@ -117,14 +115,12 @@ export async function createPendingPaymentModel(invoice_id, amount) {
     }
 }
 
-// update payment success
 export async function updatePaymentSuccessModel(payment_id, vnp_TransactionNo) {
     const connection = await pool.getConnection();
 
     try {
         await connection.beginTransaction();
 
-        // update payments
         await connection.query(
             `UPDATE payments
              SET status = 1,
@@ -134,7 +130,6 @@ export async function updatePaymentSuccessModel(payment_id, vnp_TransactionNo) {
             [vnp_TransactionNo || null, payment_id]
         );
 
-        // update invoice = paid
         await connection.query(
             `UPDATE invoices i
              JOIN payments p ON i.invoice_id = p.invoice_id
@@ -153,7 +148,6 @@ export async function updatePaymentSuccessModel(payment_id, vnp_TransactionNo) {
     }
 }
 
-// update payment failed
 export async function updatePaymentFailedModel(payment_id) {
     await pool.query(
         `UPDATE payments

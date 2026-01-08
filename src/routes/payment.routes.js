@@ -1,4 +1,3 @@
-// src/routes/payment.routes.js
 import express from 'express';
 import * as PaymentController from '../controllers/payment.controller.js';
 
