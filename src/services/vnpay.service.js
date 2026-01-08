@@ -19,8 +19,14 @@ export function createVnpayPaymentUrl({ amount, orderId, ipAddr }) {
     const vnDate = new Date(date.getTime() + 7 * 60 * 60 * 1000);
     const createDate = vnDate.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
     const expireDate = new Date(vnDate.getTime() + 15 * 60 * 1000)
-        .toISOString()
-        .replace(/[-:TZ.]/g, '').slice(0, 14);
+        .toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+
+    console.log('🔑 VNPay ENV:', {
+        TmnCode: vnp_TmnCode,
+        HasSecret: !!vnp_HashSecret,
+        ReturnUrl: vnp_ReturnUrl
+    });
+    console.log('🕐 Times:', { createDate, expireDate, orderId });
 
     const vnp_Params = {
         vnp_Version: '2.1.0',
@@ -43,6 +49,9 @@ export function createVnpayPaymentUrl({ amount, orderId, ipAddr }) {
     const hmac = crypto.createHmac('sha512', vnp_HashSecret);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
+    console.log('✍️ Hash:', signed.substring(0, 16) + '...');  // Partial log
+
     const fullParams = { ...sorted, vnp_SecureHash: signed };
     return `${vnp_Url}?${qs.stringify(fullParams)}`;
 }
+
