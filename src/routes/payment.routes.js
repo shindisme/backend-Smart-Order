@@ -8,7 +8,6 @@ router.get('/', PaymentController.getAllPayments);
 router.get('/:id', PaymentController.getPaymentById);
 router.post('/', PaymentController.createPayment);
 
-
 router.post('/vnpay/create-payment-url', PaymentController.createVnpayPaymentUrlController);
 router.get('/vnpay/vnpay-return', PaymentController.vnpayReturnController);
 

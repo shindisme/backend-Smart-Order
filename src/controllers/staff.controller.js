@@ -10,9 +10,6 @@ import {
 } from '../models/staff.model.js';
 import { sendPasswordResetEmail, sendNewAccountEmail } from '../services/email.service.js';
 
-/**
- * Hàm tạo mật khẩu ngẫu nhiên an toàn hơn
- */
 function generateRandomPassword(length = 12) {
     const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const lowercase = 'abcdefghijklmnopqrstuvwxyz';
@@ -43,6 +40,7 @@ export async function getAllStaffs(req, res) {
             data: staffs
         });
     } catch (error) {
+        console.error('Lỗi', error);
         return res.status(500).json({
             message: 'Lỗi server'
         });
@@ -66,6 +64,7 @@ export async function getStaffById(req, res) {
             data: staff
         });
     } catch (error) {
+        console.error('Lỗi: ', error);
         return res.status(500).json({
             message: 'Lỗi server'
         });
@@ -113,30 +112,29 @@ export async function insertStaff(req, res) {
             role
         });
 
-        try {
-            await sendNewAccountEmail(
-                email.toLowerCase().trim(),
-                fullname,
-                username,
-                randomPassword
-            );
-        } catch (error) {
-
-        }
+        const emailAddress = email.toLowerCase().trim();
+        sendNewAccountEmail(emailAddress, fullname, username, randomPassword)
+            .then(() => {
+                console.log(`Tài khoản mới được gửi đến: ${emailAddress}`);
+            })
+            .catch((error) => {
+                console.error(`Lỗi gửi mail ${emailAddress}:`, error.message);
+            });
 
         return res.status(201).json({
-            message: 'Tạo nhân viên thành công',
+            message: 'Tạo nhân viên thành công! Email thông tin đăng nhập đang được gửi...',
             data: {
                 user_id,
                 username,
                 password: randomPassword,
                 fullname,
-                email,
+                email: emailAddress,
                 role
             }
         });
 
     } catch (error) {
+        console.error('Lỗi', error);
         return res.status(500).json({
             message: 'Lỗi server: ' + error.message
         });
@@ -185,6 +183,7 @@ export async function updateStaff(req, res) {
         });
 
     } catch (error) {
+        console.error('Lỗi:', error);
         return res.status(500).json({
             message: 'Lỗi server'
         });
@@ -202,7 +201,7 @@ export async function deleteStaff(req, res) {
             });
         }
 
-        if (req.user.user_id === id) {
+        if (req.user && req.user.user_id === id) {
             return res.status(400).json({
                 message: 'Không thể xóa chính mình'
             });
@@ -220,6 +219,7 @@ export async function deleteStaff(req, res) {
         });
 
     } catch (error) {
+        console.error('Lỗi:', error);
         return res.status(500).json({
             message: 'Lỗi server: ' + error.message
         });
@@ -248,34 +248,32 @@ export async function resetStaffPassword(req, res) {
 
         await updatePasswordModel(id, hashedPassword);
 
-        // Gửi mail
-        try {
-            await sendPasswordResetEmail(
-                staff.email,
-                staff.fullname,
-                staff.username,
-                randomPassword
-            );
-
-            return res.status(200).json({
-                success: true,
-                message: 'Cấp lại mật khẩu thành công! Email đã được gửi đến nhân viên.',
-                data: {
-                    user_id: id,
-                    username: staff.username,
-                    fullname: staff.fullname,
-                    email: staff.email
-                }
+        sendPasswordResetEmail(
+            staff.email,
+            staff.fullname,
+            staff.username,
+            randomPassword
+        )
+            .then(() => {
+                console.log(`Mật khẩu được gửi đến staff: ${staff.email}`);
+            })
+            .catch((error) => {
+                console.error(`Lỗi ${staff.email}:`, error.message);
             });
 
-        } catch (error) {
-            return res.status(500).json({
-                success: false,
-                message: 'Đã tạo mật khẩu mới nhưng không thể gửi email. Vui lòng kiểm tra cấu hình email.'
-            });
-        }
+        return res.status(200).json({
+            success: true,
+            message: `Cấp lại mật khẩu thành công! Email đang được gửi đến: ${staff.email}`,
+            data: {
+                user_id: id,
+                username: staff.username,
+                fullname: staff.fullname,
+                email: staff.email
+            }
+        });
 
     } catch (error) {
+        console.error('Lỗi:', error);
         return res.status(500).json({
             success: false,
             message: 'Lỗi server'
